@@ -1,8 +1,0 @@
-remote 1
-<<<<<<< HEAD
-modified in local
-modified in local at main
-
-=======
-this is feature-1
->>>>>>> feature-1
