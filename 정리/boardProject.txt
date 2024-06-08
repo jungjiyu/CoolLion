@@ -1,1 +1,79 @@
 
+0. 왜 그런지 모르겠는데 @Entity 에 @@ToString 붙이면 에러남
+
+
+1. @ManyToOne(fetch = FetchType.LAZY)
+2. @NoArgsConstructor(access = AccessLevel.PROTECTED) :  Lombok 어노테이션으로, 접근 제한자가 protected인 기본 생성자를 생성합니다.
+
+
+
+@ManyToOne( ... )  과 @OneToMany( ... )
+    @ManyToOne( ... )  
+	: FK 가지는 엔티티 쪽의 필드와 함께 선언한다
+	: 해당 필드는 PK 쪽의 엔티티타입의 필드로 선언한다
+	: 보통 @JoinColumn 도 함께 사용하여 FK 가 될 컬럼명을 설정 해주는 편
+
+     @OneToMany( ... )
+	: 다른 엔티티의 FK 로 참조 당하는 엔티티쪽의 필드와 함꼐 선언한다
+	: 해당 필드는 FK쪽 엔티티를 요소로 하는 리스트타입의 필드로 선언한다
+	: 이걸로 해당 테이블에 따로 컬럼이 생기는건 아니라 딱히 @JoinColumn 을 사용하진 않는다
+	: 보통 @OneToMany 에 cascade 옵션 주는 편 >> PK 쪽이 수정되면 FK 쪽도 수정된다.
+
+
+
+
+JPA cascade
+	: EntityManager의 어떤 작업이 수행되면 해당하는 작업을 연관된 엔티티들에 전파하겠다는 의미
+	:  A라는 엔티티에 어떤 작업을 수행했을 때, 그 작업이 연관된 B라는 엔티티도 이루어져야 하는 경우 사용
+		ex)  댓글과 게시물  --> 게시물이 삭제된다면 댓글도 함께 삭제되어야한다. cascade 를 사용하면 게시물 삭제 로직 쓸 때 , 댓글 삭제 로직까지 작성할 필요가 없어진다.
+	: cascade >> 폭포수가 흐르다
+	: 보통 @OneToMany 에 cascade 옵션 주는 편 >> PK 쪽이 수정되면 FK 쪽도 수정된다.
+	: JPA Cascade가 위험한 이유
+		1.  위반 가능성
+			: 참조 무결성 제약조건 ) 데이터베이스 상의 참조가 모두 유효해야된다. 참조할 수 없는 외래 키(foreign key)를 가져서는 안 된다. 그러니까 FK가 없는 얘를 가리키고 있으면 안된다는 의미. 
+				: 참조 무결성 제약 조건에 의해 PK를 참조하는 FK가 있다면, 해당 PK는 ( 해당 PK를 가지는 row의 모든 값이 수정 불가하단게 아니라 PK컬럼의 값 자체만 ) 수정과 삭제가 불가능하다.
+			: commentA의 FK 가 postA 를 가리킨다고 하자. 여기서 postA를 삭제하는 과정에서 commentA만 같이 삭제되면, commentB는 없는 얘를 가리키고있게 되기 떄문에 참조 무결성 제약조건을 위반하게 된다.
+
+		2. 양방향 연관관계 매핑 시 충돌 가능성 >> 영속성 전이(cascade)는 관리하는 부모가 단 하나일 때 사용해야 한다
+			: 죽었던 얘도 다시 살리는 현상이 발생할 수 있다. 그러니까 commentA를 삭제한 후에, 부모이자 comment 필드에 대해 cascadeType.PERSIST가 맵핑되있는 postA를 save 하면 , 영속성 컨텍스트에서 죽어있던 commentA가 다시 살아난다. ???? 
+
+
+	: 타입
+		(1) CascadeType.ALL: 모든 Cascade를 적용
+		(2) CascadeType.PERSIST: 엔티티를 영속화할 때, 연관된 엔티티도 함께 영속화
+		(3) CascadeType.MERGE: 엔티티 상태를 병합(Merge)할 때, 연관된 엔티티도 모두 병합
+		(4) CascadeType.REMOVE: 엔티티를 제거할 때, 연관된 엔티티도 모두 제거
+		(5) CascadeType.DETACH: 부모 엔티티를 detach() 수행하면, 연관 엔티티도 detach()상태가 되어 변경 사항 반영 X
+		(6) CascadeType.REFRESH: 상위 엔티티를 새로고침(Refresh)할 때, 연관된 엔티티도 모두 새로고침
+
+	https://papimon.tistory.com/90
+	https://tecoble.techcourse.co.kr/post/2023-08-14-JPA-Cascade/
+	https://resilent-923.tistory.com/417
+
+
+
+------------------------------------------------------------------------------------
+
+추가
+- 엔티티
+
+Comment
+1.  private Comment comment;
+2.  private Integer likes;
+3. private List<Comment> comments; 
+
+Board
+1. private List<Comment> comments; 
+
+
+Member
+1.  private List<Comment> comments = new ArrayList<>(); 의 @OneToMany에 cascade = CascadeType.ALL 추가
+
+- 컨트롤러추가
+
+
+Exception 추가
+
+
+
+
