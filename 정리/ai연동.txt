@@ -26,3 +26,6 @@ Assistants API : assistants ai를 다루는 API
 	: requirements.txt >> 실행 위해 설치한 패키지
 
 특이하게 assistant 와 thread 의 존재성은 별개이다. assistant가 먼저 존재 한 후 스레드를 생성 가능한게 아니라 , thread 를 먼저 만든 후 assistant 를 주입할 수도 있다.
+
+
+https://jypark1111.tistory.com/203
