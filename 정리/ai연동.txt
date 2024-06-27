@@ -1,0 +1,28 @@
+Assistants API : assistants ai를 다루는 API
+	: https://www.youtube.com/watch?v=LdYb356GXeI
+	: assistants >> open ai 가 제공하는 특수 목적(대화 스레드 관리, 메시지 저장 , 파일 저장 ... )의 ai
+	: assistants API vs assistants API : 
+		; assistants API >> open ai 에 의존적. 사용 쉬움. 
+		; chatgpt API . langchain >>  직접 커스터마이징. 복잡함.
+	: 아직 베타 버전이다.
+	: 구조
+		Assistant >> 젤 큰 개념. 특정 목적의 bot 단위	
+			: chat gpt 사이드 바에 뜨는 그림 그리는 봇 같은..
+			: 생성 당시에 자신의 존재 목적이 뭔지 instruction 에 적고, 기타 tool 설정(interpretor, .. )을 해준다
+		Thread >> 사용자의 대화 단위.
+			:  chat gpt 사이드 바에 쌓이는 대화 내역...
+			: Thread 는 사용자와 assistant 의 메세지 내역으로 구성됨.
+			: Thread id 가 같으면 이전 대화 내용을 기억함.
+		Run >> 엔터를 누르는 행위. 실행.
+			: 단순히 Thread에 사용자 메시지를 추가한다고 실행(Assistant 로 답변 메시지를 받는게)되는게 아니라, run 시켜야 실행됨.
+			: run 을 돌릴때, 각각 instruction을 추가해 줄 수도 있다.
+
+
+개발
+	: .env >> 환경변수 설정 파일
+		: OPEN_API_KEY >> assistants 웹 페이지의 사이드 탭에 뜨는거 긁긁
+
+	: 파일명.py >> 본격 프로젝트
+	: requirements.txt >> 실행 위해 설치한 패키지
+
+특이하게 assistant 와 thread 의 존재성은 별개이다. assistant가 먼저 존재 한 후 스레드를 생성 가능한게 아니라 , thread 를 먼저 만든 후 assistant 를 주입할 수도 있다.
