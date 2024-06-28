@@ -1,0 +1,137 @@
+Jackson 라이브러리는 기본 생성자를 필요로 한다. @NoArgContructor 를 항상 붙이라는겨??
+
+
+system 설정하는게 더 빠르다.
+	system으로 설정하고 게시글만 쿼리함>> 749ms
+	게시글만 쿼리함>> 1229ms
+
+
+API 통신 방법
+	: https://velog.io/@limehee/Spring-WebClient%EB%A5%BC-%EC%9D%B4%EC%9A%A9%ED%95%9C-API-%ED%98%B8%EC%B6%9C-%EA%B0%9C%EC%84%A0
+******(0) WebClient
+		: 스프링 5부터 도입된 비동기 및 반응형 프로그래밍을 지원하는 HTTP 클라이언트
+		: RestTemplate보다 현대적
+		: OkHttp보다 스프링과의 통합이 잘 되어 있어 더 편리
+
+	(1) RestTemplate 
+		: 기본적으로 매번 의존성 추가하는 Spring Boot Web 에 포함되어있음
+	(2) OkHttp
+
+
+Chat completions Api : 일반적으로 생각되는 chatGPT 기능( 자연어처리 챗봇)을  제공하는 api.
+	: https://kanoos-stu.tistory.com/87
+	: 엔드포인트 >> https://api.openai.com/v1/chat/completions
+	: request 
+		: request header 형식
+		    : 필수
+			: Authorization >>챗지피티api키를 인증으로 사용
+				:  " Bearer 챗지피티api키"의 형식
+ 
+		: request body 형식
+		    : 필수
+			(1) model >> 사용할 모델명시
+				: "gpt-4o" , "gpt-3.5-turbo" ... 와 같은 문자열값
+
+			(2) messages >> 
+				: {"role": "system", "content": "챗봇초기지침과설정내용"} , {"role": "user", "content": "질문내용"} 과 같은 객체를 요소로 하는 배열
+				: 객체의 role 과 content 속성은 필수적.
+					1. role : system , user, assistant 중 하나 가능
+						: 한 messages 배열에 같은 role 을 가지는 객체를 여러개 담을 수도 있다.
+						(1) user >> 사용자. 챗봇에게 질문하는 대상.
+							: 해당 객체의 content 속성에 질문할 내용을 담게된다.
+							: messages는 이 role 을 가지는 객체를 필수적으로 요소로 가져야됨. (role 이 system 이거나 assistant 인건 걍 옵션임 )
+
+						(2) system >> 챗봇 관리자. 
+							: 해당 객체의 content 속성에 챗봇초기지침내용을 담게 된다.
+							: 필수적이진 않다
+
+					2. content : 챗지피티가 받을 내용을 담는다.
+						: role 에 따라 담을 수 있는 내용이 다르다
+				: 예시
+  				  "messages": [
+    				    {
+      				      "role": "system",
+      				      "content": "당신은 웨이트 트레이닝 전문가입니다."
+      				  },
+      				  {
+       				     "role": "user",
+        				    "content": "둔근을 키울 수 있는 운동을 추천해주세요."
+      				  }
+   				 ]
+
+
+		    : 옵션
+			(1) max_tokens : 응답될 문장의 최대 토큰 수를 제어한다.
+				: 참고 >> 토큰 수 확인 사이트 : https://platform.openai.com/tokenizer
+			(2) user : 요청을 보낸 사용자를 식별하는 데 사용
+			(3) temperature 
+			(4) top_p  
+			(5) n 
+			(6) stream  
+			(7) stop  
+			(8) presence_penalty   
+			(9) frequency_penalty   
+			(10) logit_bias   
+
+
+		: 종합 예시
+
+curl https://api.openai.com/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "system",
+        "content": "assistant지시사항"
+      },
+      {
+        "role": "user",
+        "content": "컨텐츠내용1"
+      },
+      {
+        "role": "user",
+        "content": "컨텐츠내용2"
+      }
+    ]
+  }'
+
+
+	: response
+{
+  "id": "chatcmpl-123",
+  "object": "chat.completion",
+  "created": 1677652288,
+  "model": "gpt-3.5-turbo-0125",
+  "system_fingerprint": "fp_44709d6fcb",
+  "choices": [{
+    "index": 0,
+    "message": {
+      "role": "assistant",
+      "content": "\n\nHello there, how may I assist you today?",
+    },
+    "logprobs": null,
+    "finish_reason": "stop"
+  }],
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 12,
+    "total_tokens": 21
+  }
+}
+
+
+
+gpt 와 spring boot 연동
+
+	step 1. application.properties >> 일단 필수적으로 key 는 저장해두자.
+#gpt-4
+openai.api.key=키값
+openai.model=gpt-4o
+openai.api.url= https://api.openai.com/v1/chat/completions
+
+	step 2. gpt에게 request 될 dto 생성
+		: 필수 필드 
+			(1)
+			(2)
