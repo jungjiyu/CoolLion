@@ -1,0 +1,1 @@
+API 통신의 종류 - 비동기와 동기 when and how
