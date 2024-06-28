@@ -8,6 +8,7 @@ system 설정하는게 더 빠르다.
 
 API 통신 방법
 	: https://velog.io/@limehee/Spring-WebClient%EB%A5%BC-%EC%9D%B4%EC%9A%A9%ED%95%9C-API-%ED%98%B8%EC%B6%9C-%EA%B0%9C%EC%84%A0
+	: 아래 3가지 다 Http Client. 다른 서버로 request 할 수 있게 한다.
 ******(0) WebClient
 		: 스프링 5부터 도입된 비동기 및 반응형 프로그래밍을 지원하는 HTTP 클라이언트
 		: RestTemplate보다 현대적
@@ -16,6 +17,157 @@ API 통신 방법
 	(1) RestTemplate 
 		: 기본적으로 매번 의존성 추가하는 Spring Boot Web 에 포함되어있음
 	(2) OkHttp
+
+
+
+동기 비동기 블록킹 넌블록킹
+	: https://musma.github.io/2019/04/17/blocking-and-synchronous.html
+	: 쉽게 말하면 블럭/논블럭개념 ⊂ 동기/비동기개념
+	:  동기/비동기 >> 작업의 순서
+
+		: 동기(synchronous) >> 요청과 결과가 동기적이다. 요청을 보낸 후 응답을 받아야 다른 동작 실행된다.
+		: 비동기(asynchronous) >> 요청과 결과가 비동기적이다. 요청을 보낸 후 응답을 아직 받지 않았더라도 다른 동작을 실행 가능하다.
+
+
+	:  블록킹/넌블록킹 >> 제어권
+		: Blocking >>  호출된 함수가 자신이 할 일을 모두 마칠 때까지 제어권을 계속 가지고서 호출한 함수에게 바로 돌려주지 않는다
+		: Non-Blocking >> 호출된 함수가 자신이 할 일을 마치지 않았더라도 바로 제어권을 건네주어(return) 호출한 함수가 다른 일을 진행할 수 있도록 해준다 
+
+
+
+idle :  대기 상태에 있는(실행되지 않고 있는) 것. 
+	: 통합 개발 환경 IDE 랑 전혀 다른 개념임
+
+
+
+폴링 Polling: 주기적으로 체크하는 방식
+
+Tomcat의 Connector :  Servlet Container가 외부와 소통할 수 있게 함
+	: https://velog.io/@jihoson94/BIO-NIO-Connector-in-Tomcat
+	: 종류 >> 기존엔 BIO 썼었으나 현재는 NIO 쓴다. 따라서 비동기 작업이 가능하다.
+		(1) BIO (Blocking I/O) : 하나의 스레드가 하나의 I/O 작업을 동기적으로 처리.
+			: Connector 내부에서 각 요청 마다 바로 Thread를 (Woker Thread Pool에서 꺼내) 할당해 처리시키고, 각 스레드는 해당 작업이 완료될 때까지 block 된다. 그러니까 외부에 복잡한 작업 시켰을 때 해당 스레드는 멍청하게 놀고 있는거다.
+			: 현재 depreceated 됨
+
+		(2) NIO (Non-blocking I/O) : 하나의 스레드가 여러 I/O 작업을 처리. 비동기적.
+			:  Connector 내부에서 요청들을 모두 하나의 Thread(Poller)가 관리하게 된다. 이 Thread(poller)는 처리가 가능한 순간(데이터 준비가 된순간. 그러니까 외부에 복잡한 작업 시키고 결과를 얻은 상태.)에만 request 를 thread를 할당한다. 처리가 불가능한 순간(외부에 복잡한 작업 시켰을때)엔 해당 스레드에서 다른 요청 작업을 처리하게 한다.
+			:  thread idle 상태를 줄이고 데이터를 이용할 수 있을 때만 Thread를 사용하기 때문에 더 많은 Thread를 즉, 더 많은 동시 사용자의 요청을 처리 가능
+			: 현재 얘를 채택.
+
+
+servlet : tomcat 과 마찬가지로 처음엔 blocking 방식만 지원했으나 이젠 non-blocking 도 지원.
+
+
+Spring MVC의 동작 방식 : 현재에도 blocking 하게만 작동.  따라서 동기적 처리만 가능. DispatcherServelt 때문에.
+	: 아무리 Tomcat , Servlet이 NIO 로 요청을 비동기적으로 처리한다고 해도, MVC에선 Asynchronouse/Non-blocking 하게 작동되지 않음. 
+	: DispatcherServelt 내부에서 사용되는 HttpServletRequest, HttpServletResponse는 In/OutputStream 을 상속받는데, 이  In/OutputStream 은 Blocking 하게 동작이 되는 얘들임.
+	:  @Async 또는 completedfuture 등을 사용하여 내부적으로 비동기 방식을 구현할 수 있으나, 실제 사용자의 요청 자체에 대해선 Synchronouse 즉 동기적인 처리가 이뤄지고 이를 어케 손볼 수는 없다. 
+	: https://velog.io/@akfls221/%EB%8F%99%EA%B8%B0%EB%B9%84%EB%8F%99%EA%B8%B0-NonBlocking-Blocking%EA%B3%BC-%EC%9B%B9-%EC%84%9C%EB%B2%84%EC%9D%98-%EA%B4%80%EA%B3%84	
+
+
+
+Traditional Data Proccessing 전통적인 데이터 처리 방식 : request 의 페이로드 데이터, 응답을 위한 데이터들을 모두 메모리에 저장 후 사용자에게 응답을 보냄. 
+	: 한 요청 처리 위해 다량의 데이터를 메모리에 저장해야됨. 
+
+Stream Proccessing : 최대한 지금 당장 처리해야되는 데이터만 메모리에 저장시키고, 사용자에게 응답을 보냄.
+	: 크기가 작은 시스템 메모리로도 많은 양의 데이터를 처리 가능. 
+	
+
+
+Publisher 와 Subscriber :
+	Publisher (= Subject = Observable = Producer): 이벤트 발행하는 대상
+	Subscriber(= Observer = Consumer) : 이벤트를 consume 하는 대상
+
+
+Push 방식. : Publisher 가 Subscriber 에게 이벤트를 보내는 방식
+	:  Publisher 가 n개의 이벤트를 보내는 속도보다 Subscriber 가 n개의 이벤트를 처리하는 속도가 느리다면, Subscriber는 대기하는 이벤트를 위한 Queue를 두어야됨.
+		: 이때 Queue 사이즈 이상으로 이벤트가 발생한다면, 신규로 수신된 메시지를 거절함. 그리고 거절된 메세지는 이후 재요청하게 되고, 이 과정에서 네트워크와 cpu 연산 비용 추가 발생. >> 비효율적
+
+
+Pull 방식 :  Subscriber가 자신이 수용할 수 있는 만큼만 Publisher에게 Event를 요청하는 방식
+	: Publisher는 요청받은 만큼만 전달하면 되고, Subscriber는 더 이상 ‘Out of Memory’ 에러를 걱정하지 않아도 됨.
+	: 다이나믹 풀 방식 : 말 그대로 동적인 풀 방식. 현재 상태따라 Subscriber가 다양한 크기의 이벤트를 요청하는 것.	
+
+
+BackPressure 백프레셔 : 데이터 스트리밍 환경에서 다이나믹 풀 방식으로  데이터 흐름을 조절하는 메커니즘
+	: 그러니까 pull 방식처럼 데이터의 전달이 subscriber 의 요구에 따라 조절된다는 것.
+	: BackPressure 란 이름은, 반대로 압력을 넣는 다는 의미. 그러니까 subscirber 가 제공자인 publisher 에게 거꾸로 요청하는 방식에서 유래한것.
+
+
+Reactive Streams: Backpressure 로 데이터흐름을 관리하는 비동기 데이터 스트리밍 시스템
+	: 비동기 시스템에서 사이즈가 정해져있지 않은 데이터 스트림들을 다룰 때, 전달되는 데이터 자원의 양이 도착지에서 처리가능한양을 압도하지 않게 하기 위한 제어가 필요하고, 이를 위해 백프래셔를 채택한 것.
+	; 비동기 thread 경계 사이로 스트림 데이터의 교환을 관리
+		:  생산자와 소비자가 서로 다른 스레드에서 동작하는 경우, 둘 사이의 데이터 교환을 안정적이고 유연하게 관리해준다는 것.
+
+
+
+Spring Reactive Stack : EventLoop 방식을 통해 Asynchronose/Non-blocking한 Web Application운용을 가능하게 함.
+	: 기존 (DispatcherServlet , getParameter , Filter 등등의.  ) 동기 처리 방식으로 인한 한계를 극복하고자 탄생됨
+ 		: DispatcherServlet만 문제가 있는건 아니고 여러가지 두루두루 문제가 많은데 그중 대표적인게 DispatcherServlet인것.
+
+
+Reactive Programming :  이벤트 대한 반응 중심의 프로그래밍
+	:  작업이 완료되길 기다리기보단, 완료 혹은 데이터를 사용할 수 있는 상태로의 변화가 감지되면 반응함.
+
+	: 비동기적 처리를 가능하게 해줌
+	: 데이터 흐름 중심적 프로그래밍을 가능하게 해줌.
+	: 동시성 Concurrency
+		: 
+	
+
+
+Thread per request VS EventLoop Model 
+	: https://velog.io/@jihoson94/EventLoopModelInSpring
+	: https://dev-jj.tistory.com/entry/Spring-WebFlux-EventLoop-Non-Blocking
+	: Thread per request >>  각 Request마다 Thread 를 할당해 처리하는 모델.
+		: Blocking IO처리를 할 때 "해당" Thread는 아무것도 하지않고 대기상태. 논다.
+			: 해당 IO 처리가 끝날 때까지 그 Thread 는 놀고 있는 상태이므로 비효율적이다.
+			: 헷갈리지 말아야할 것>> thread 간은 비동기적임. 그러니까 threadA 가 blocking 작업 실행하고 있다해도 , threadB 는 다른 작업을 수행 가능하다.
+
+
+	: EventLoop Model >> 이벤트 기반으로 Thread 를 할당해 처리하는 모델.
+
+
+
+
+
+
+
+RestTemplate
+	: Multi-Thread와 Blocking 방식사용
+
+	: 작동 방식
+		1. 어플리케이션 구동 시점에 Thread Pool 생성
+		2. (타 서버로 보낼) request는 먼저 Queue에 쌓임
+		3. 가용한 쓰레드가 있음 해당 request 를 그 쓰레드에 할당
+			: 1요청 당 1스레드가 할당
+			: 가용한 쓰레드가 생길때까진 Queue에서 대기
+		4. 각 쓰레드는 Blocking 방식으로 처리됨
+			:  응답이 받을때까지 그 스레드는 다른 요청에 할당 될 수 없음
+	: 가용한 쓰레드수가 적으면, 결국 전체 서비스는 매우 느려지게 되어 Spring 커뮤니티에서는 RestTemplate을 이미 Depreciated시키고 WebClient를 사용할것을 강력히 권고함.
+
+
+
+
+스프링부트와 webclient
+	: https://velog.io/@yyong3519/%EC%8A%A4%ED%94%84%EB%A7%81%EB%B6%80%ED%8A%B8-WebClient
+	: https://leeggmin.tistory.com/11
+	: 싱글 스레드와 Non-Blocking 방식 사용
+
+	: "이벤트" 반응형으로 설계되어있음
+		: webclient에서의 "이벤트" >> 비동기 요청/응답, 데이터 스트림의 변화 등과 같은 비동기 작업과 상태 변화. 
+			: 프론트단의 마우스클릭과 같은 사용자 이벤트를 말하는게 아님 주의.
+
+		: 반응성, 탄력성, 가용성, 비동기성을 보장하는 Spring React 프레임워크를 사용함
+		: React Web 프레임워크인 Spring WebFlux 에서 Http Client로 사용됨
+
+	: 작동 방식
+		1. 각 요청은 Event Loop 내에 Job으로 등록됨
+		2. Event Loop는 각 Job을 제공자에게 요청한 후, 결과를 기다리지 않고 다른 Job을 처리
+
+	: 이벤트 루프
+		: https://velog.io/@jihoson94/EventLoopModelInSpring
+
 
 
 Chat completions Api : 일반적으로 생각되는 chatGPT 기능( 자연어처리 챗봇)을  제공하는 api.
@@ -127,7 +279,7 @@ gpt 와 spring boot 연동
 
 	step 1. application.properties >> 일단 필수적으로 key 는 저장해두자.
 #gpt-4
-openai.api.key=키값
+openai.api.key=키복붙
 openai.model=gpt-4o
 openai.api.url= https://api.openai.com/v1/chat/completions
 
