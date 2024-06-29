@@ -128,7 +128,9 @@ Thread per request VS EventLoop Model
 	: EventLoop Model >> 이벤트 기반 비동기 작업을 효율적으로 처리하는 모델
 		: Reactive Programming에서 활용될 수 있는 모델 중 하나
 		: 이벤트 >> "비동기 작업(주로 I/O 작업 완료, 타이머 만료, 사용자 입력 등)의 완료 신호"
-		: EventLoop 
+		: EventLoop
+		    : 말 그대로 이벤트 감지를 위해 loop 를 계속 돌리고 , 이벤트를 감지하면 해당 이벤트에 대한 작업을 수행한다는거다.
+		    : 특징 
 			: 단일 스레드에서 동작
 			: 이벤트 발생시, 이벤트 큐Event queue 에 해당 이벤트와 (해당이벤트와연결된) 콜백함수를 추가
 			: 이벤트 루프에서 이벤트를 하나씩 꺼내 처리. 즉 해당 이벤트와 연결된 콜백함수 실행시킴.
@@ -172,9 +174,49 @@ Netty >>비동기 이벤트 기반 네트워크 애플리케이션 프레임워�
 
 
 
-RestTemplate
-	: Multi-Thread와 Blocking 방식사용
 
+
+
+
+spring-boot-starter-web 과 spring-boot-starter-webflux 를 동시에 사용해도 될까 ? >> oo
+    : 동시에 사용해도된다. 알잘딱깔센 적이게, 전체적인 설정은 spring mvc 가 적용되면서 webflux 의 유용한 기능(webclient .. ) 는 그대로 사용할 수 있다
+ 	: Spring Boot는 spring-boot-starter-web과 spring-boot-starter-webflux가 모두 포함된 경우, 기본적으로 Spring MVC를 사용하도록 설정하면서도, WebClient를 사용할 수 있도록 필요한 빈을 자동으로 구성하기 떄문.
+
+
+스프링의 종류와 자동설정
+	: 스프링의 웹 프레임워크 종류
+		(1) WebMVC: 전통적인 멀티 쓰레드 기반의 웹 프레임워크 << spring-boot-starter-web
+		(2) WebFlux:  리액티브 스택 기반의 웹 프레임워크<<  spring-boot-starter-webflux 
+
+	: 스프링의 애플리케이션 타입
+	    : 애플리케이션의 실행 시점에서, 클래스 패스를 기반으로 다음 3가지 중 "하나"로 선택된다.
+		: spring-boot-starter-web 과 spring-boot-starter-webflux 의존성이 모두 존재할 경우 SERVLET타입이 채택된다.
+		(1) NONE: 웹 애플리케이션이 아닌 경우
+		(2) SERVLET: 서블릿 웹 애플리케이션인 경우
+		(3) REACTIVE: 리액티브 웹 애플리케이션인 경우
+
+	: 자동설정 
+		: 애플리케이션의 타입에 따라 자동설정이 진행된다.
+			:  spring-boot-starter-web 과 spring-boot-starter-webflux 의존성이 모두 존재할 경우 타입이 SERVLET 이 되므로 일반적으로 WebFlux 관련 자동설정은 활성화되지 않는다. 
+				:  Spring MVC으로 Application이 구성되기 때문에 DispatcherServlet, ThreadPoolExecutor, Controller bean이 여전히 존재한다.
+				: 참고로 @EnableWebFlux 를 사용하여 WebFluxAutoConfiguration를 강제 활성화 시킬 수 있긴하다...
+ 
+		: 자동설정을 "활성화"하는 클래스
+			(1) SERVLET 타입인 경우 >> WebMvcAutoConfiguration
+			(2) REACTIVE 타입인 경우 >> WebFluxAutoConfiguration
+
+		: https://velog.io/@kny8092/spring-boot-starter-web%EA%B3%BC-webflux%EB%A5%BC-%EB%8F%99%EC%8B%9C%EC%97%90-%EC%82%AC%EC%9A%A9%ED%95%98%EB%A9%B4-%EC%96%B4%EB%96%BB%EA%B2%8C%ED%95%A0%EA%B9%8C
+		: https://mangkyu.tistory.com/257
+		: https://stackoverflow.com/questions/51377675/dont-spring-boot-starter-web-and-spring-boot-starter-webflux-work-together
+		: https://docs.spring.io/spring-boot/docs/2.1.13.RELEASE/reference/html/boot-features-developing-web-applications.html#:~:text=Adding%20both%20spring%2Dboot%2Dstarter,to%20use%20the%20reactive%20WebClient%20.
+		
+		: spring-boot-starter-web >> 기본적인 spring mvc 프로젝트 생성 위해 필요
+		: spring-boot-starter-webflux  >> webclient 사용 위해 필요
+
+
+
+
+RestTemplate >> Multi-Thread와 Blocking 방식으로 요청 처리한다
 	: 작동 방식
 		1. 어플리케이션 구동 시점에 Thread Pool 생성
 		2. (타 서버로 보낼) request는 먼저 Queue에 쌓임
@@ -188,12 +230,13 @@ RestTemplate
 
 
 
-스프링부트와 webclient
-	: https://velog.io/@yyong3519/%EC%8A%A4%ED%94%84%EB%A7%81%EB%B6%80%ED%8A%B8-WebClient
+webclient >> Single Thread와 Non-Blocking 방식 요청 처리
+	: https://gngsn.tistory.com/154
+	: https://velog.io/@da_na/WebClient-WebClient-%EC%82%AC%EC%9A%A9%ED%95%B4%EC%84%9C-%EC%99%B8%EB%B6%80-API-%ED%98%B8%EC%B6%9C%ED%95%98%EA%B8%B0
+	: https://devahea.github.io/2019/04/21/Spring-WebFlux%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%A0%81%EC%9D%80-%EB%A6%AC%EC%86%8C%EC%8A%A4%EB%A1%9C-%EB%A7%8E%EC%9D%80-%ED%8A%B8%EB%9E%98%ED%94%BD%EC%9D%84-%EA%B0%90%EB%8B%B9%ED%95%A0%EA%B9%8C/
 	: https://leeggmin.tistory.com/11
-	: 싱글 스레드와 Non-Blocking 방식 사용
-
-	: "이벤트" 반응형으로 설계되어있음
+	: 적은 리소스로 많은 트래픽을 감당한다.
+	: "이벤트" 반응형이다.
 		: webclient에서의 "이벤트" >> 비동기 요청/응답, 데이터 스트림의 변화 등과 같은 비동기 작업과 상태 변화. 
 			: 프론트단의 마우스클릭과 같은 사용자 이벤트를 말하는게 아님 주의.
 
@@ -202,11 +245,32 @@ RestTemplate
 
 	: 작동 방식
 		1. 각 요청은 Event Loop 내에 Job으로 등록됨
-		2. Event Loop는 각 Job을 제공자에게 요청한 후, 결과를 기다리지 않고 다른 Job을 처리
+		2. Event Loop는 각 Job을 publisher 에게 요청한 후, 결과를 기다리지 않고 다른 Job을 처리
 
-	: 이벤트 루프
-		: https://velog.io/@jihoson94/EventLoopModelInSpring
+	: 사용방법
+		step 1. https://gngsn.tistory.com/154
+		step 2. https://gngsn.tistory.com/198
+		: request body 설정하기
+			(1) bodyValue( Object ) : 단순하고 간편하게 요청 본문을 설정
+			(2) body(BodyInserters.fromValue( Mono<Object> ) ) : 선택적으로 요청 본문을 구성
 
+		: response body 받아오기
+			: retrieve() : body를 받아 디코딩하는 간단한 메소드
+		: retrieve 이후에 사용 가능한 메서드
+		   1. status, headers, body를 포함하는 ResponseEntity 타입으로 반환
+			: toEntity()
+		   2. body의 데이터로만 받음
+			(1) toMono() :  최대 하나의 결과를 예상할 때 사용
+			(2) toFlux() : 여러 결과가 예상되는 경우 사용
+
+	 	: 외부 API 에러 처리하기
+.onStatus(HttpStatus::is4xxClientError, response -> ...)
+Event
+	: Event-Driven Programming>> 프로그램 실행 흐름이 이벤트에 의해 결정되는 프로그래밍 패러다임
+		: 여기서의 이벤트는 프론트 단의 마우스 클릭 등과 작업완료와 같은 백엔드 단의 이벤트 모두를 일컬어 말하는거다.
+	: 이벤트를 감지하는 원리 
+		: Event 감지하는 Loop를 계속 돌리고, Event를 감지하면 적합한 handler 에게 해당 handler 가 해당 event 에 바인딩된 콜백을 실행하게한다.
+	; https://devahea.github.io/2019/04/21/Spring-WebFlux%EB%8A%94-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%A0%81%EC%9D%80-%EB%A6%AC%EC%86%8C%EC%8A%A4%EB%A1%9C-%EB%A7%8E%EC%9D%80-%ED%8A%B8%EB%9E%98%ED%94%BD%EC%9D%84-%EA%B0%90%EB%8B%B9%ED%95%A0%EA%B9%8C/
 
 
 Chat completions Api : 일반적으로 생각되는 chatGPT 기능( 자연어처리 챗봇)을  제공하는 api.
